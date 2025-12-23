@@ -32,9 +32,12 @@ wheels/
 .installed.cfg
 *.egg
 
-# PyInstaller
+# PyInstaller build artifacts
 *.manifest
 *.spec
+build/
+dist/
+*.exe
 
 # Installer logs
 pip-log.txt

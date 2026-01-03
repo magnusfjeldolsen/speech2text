@@ -22,17 +22,44 @@ pip install -r requirements.txt
 
 ## Step 2: Build the Executable
 
-### Basic Build (Recommended for Testing)
+### Automated Build (Recommended)
 
-From your project directory with the virtual environment activated:
+The easiest way is to use the provided build script:
 
 ```powershell
-pyinstaller --onefile --windowed dictation_app.py
+.\build.ps1
+```
+
+This script handles recursion limits and other PyInstaller issues automatically.
+
+### Manual Build
+
+If you prefer to build manually, follow these steps:
+
+**Step 1: Generate spec file**
+
+```powershell
+pyinstaller --onefile --windowed --name SpeechToText dictation_app.py
+```
+
+**Step 2: Fix recursion limit**
+
+Edit `SpeechToText.spec` and add this line at the very top:
+
+```python
+import sys ; sys.setrecursionlimit(sys.getrecursionlimit() * 5)
+```
+
+**Step 3: Build with spec file**
+
+```powershell
+pyinstaller --clean SpeechToText.spec
 ```
 
 **Flags explained:**
 - `--onefile` - Creates a single executable file instead of a folder with dependencies
 - `--windowed` - Hides the console window (GUI-only app)
+- `--clean` - Clean PyInstaller cache before building
 
 ### Advanced Build with Custom Options
 

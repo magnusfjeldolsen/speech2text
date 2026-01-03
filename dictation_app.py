@@ -5,6 +5,7 @@ import sounddevice as sd
 import numpy as np
 import whisper
 import pyperclip
+import os
 
 # ---------------- CONFIG ----------------
 SAMPLE_RATE = 16000
@@ -21,6 +22,11 @@ text_was_modified = False
 LANG_MAP = {
     "English (US)": "en",
     "Norsk": "no"
+}
+
+PROMPT_FILES = {
+    "English (US)": "prompts/english.txt",
+    "Norsk": "prompts/norwegian.txt"
 }
 
 
@@ -150,6 +156,41 @@ def copy_all_text():
         status_label.config(text="No text to copy")
 
 
+def copy_with_prompt():
+    """Copy text with language-specific prompt for AI rewriting"""
+    all_text = output_text.get("1.0", tk.END).strip()
+    if not all_text:
+        status_label.config(text="No text to copy")
+        return
+
+    # Get current language and corresponding prompt file
+    current_lang = language_var.get()
+    prompt_file = PROMPT_FILES.get(current_lang)
+
+    if not prompt_file or not os.path.exists(prompt_file):
+        status_label.config(text="Prompt file not found")
+        return
+
+    # Read prompt template
+    try:
+        with open(prompt_file, 'r', encoding='utf-8') as f:
+            prompt_template = f.read()
+    except Exception as e:
+        status_label.config(text="Error reading prompt")
+        return
+
+    # Combine prompt with text
+    combined_text = prompt_template + all_text
+
+    # Copy to clipboard
+    pyperclip.copy(combined_text)
+
+    if text_was_modified:
+        status_label.config(text="Prompt + text copied (modified)")
+    else:
+        status_label.config(text="Prompt + text copied")
+
+
 def toggle_recording(event=None):
     if recording:
         stop_recording()
@@ -189,11 +230,14 @@ start_btn.pack(side="left", padx=5)
 stop_btn = ttk.Button(btn_frame, text="Stop (Space)", command=stop_recording, state="disabled")
 stop_btn.pack(side="left", padx=5)
 
-clear_btn = ttk.Button(btn_frame, text="Clear (Del)", command=clear_text)
+clear_btn = ttk.Button(btn_frame, text="Clear (Ctrl+Del)", command=clear_text)
 clear_btn.pack(side="left", padx=5)
 
 copy_btn = ttk.Button(btn_frame, text="Copy All", command=copy_all_text)
 copy_btn.pack(side="left", padx=5)
+
+prompt_btn = ttk.Button(btn_frame, text="Copy Prompt", command=copy_with_prompt)
+prompt_btn.pack(side="left", padx=5)
 
 status_label = ttk.Label(frame, text="Ready")
 status_label.pack(pady=5)
@@ -216,7 +260,7 @@ output_text.bind("<KeyRelease>", on_text_modified)
 
 # Keyboard shortcuts
 root.bind("<space>", toggle_recording)
-root.bind("<Delete>", handle_delete)
+root.bind("<Control-Delete>", handle_delete)
 output_text.bind("<Control-c>", copy_selected_text)
 output_text.bind("<Control-C>", copy_selected_text)
 

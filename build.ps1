@@ -55,13 +55,30 @@ if (Test-Path "*.spec") {
 Write-Host "`n[3/4] Building executable..." -ForegroundColor Yellow
 Write-Host "      This may take several minutes..." -ForegroundColor Cyan
 
-$buildCommand = "pyinstaller --onefile --windowed --name SpeechToText --clean dictation_app.py"
-Write-Host "      Command: $buildCommand" -ForegroundColor Gray
+# First run to generate spec file with exclusions
+Write-Host "      Generating spec file..." -ForegroundColor Gray
+$excludes = "matplotlib", "IPython", "jupyter", "notebook", "pytest", "scipy.spatial.transform._rotation_groups"
+$excludeArgs = ($excludes | ForEach-Object { "--exclude-module=$_" }) -join " "
+$buildCommand = "pyinstaller --onefile --windowed --name SpeechToText $excludeArgs dictation_app.py"
+Invoke-Expression $buildCommand | Out-Null
 
-Invoke-Expression $buildCommand
+# Modify spec file to increase recursion limit
+if (Test-Path "SpeechToText.spec") {
+    Write-Host "      Modifying spec file for recursion limit..." -ForegroundColor Gray
+    $specContent = Get-Content "SpeechToText.spec" -Raw
+    $newContent = "import sys ; sys.setrecursionlimit(sys.getrecursionlimit() * 5)`n`n" + $specContent
+    Set-Content "SpeechToText.spec" -Value $newContent
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "      [ERROR] Build failed" -ForegroundColor Red
+    Write-Host "      Building with spec file..." -ForegroundColor Gray
+    pyinstaller --clean SpeechToText.spec
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "      [ERROR] Build failed" -ForegroundColor Red
+        exit 1
+    }
+}
+else {
+    Write-Host "      [ERROR] Failed to generate spec file" -ForegroundColor Red
     exit 1
 }
 
